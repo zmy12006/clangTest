@@ -3,11 +3,11 @@ enum class Cpp11Enum
   RED = 10,
   BLUE = 20
 };
-
+#define TAG
 struct Wowza
 {
   virtual ~Wowza() = default;
-  virtual void foo(int i = 0) = 0;
+  virtual void TAG foo(int i = 0) = 0;
 };
 
 struct Badabang : Wowza
