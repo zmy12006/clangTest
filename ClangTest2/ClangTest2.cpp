@@ -14,6 +14,13 @@
 using namespace std;
 std::string g_fileName = "";
 
+struct fileLocation
+{
+    std::string fileName;
+    unsigned line;
+    unsigned column;
+};
+
 ostream& operator<<(ostream& stream, const CXString& str)
 {
     stream << clang_getCString(str);
@@ -21,8 +28,9 @@ ostream& operator<<(ostream& stream, const CXString& str)
     return stream;
 }
 
-std::string getFileName(CXCursor cursor)
+fileLocation getFileName(CXCursor cursor)
 {
+    fileLocation flocation;
     //CXCursorKind kind = clang_getCursorKind(cursor);
     CXSourceRange range = clang_getCursorExtent(cursor);
     CXSourceLocation location = clang_getRangeStart(range);
@@ -36,13 +44,17 @@ std::string getFileName(CXCursor cursor)
 
     std::string nameStr = "";
     if (clang_getCString(fileName)) nameStr = clang_getCString(fileName);
-    return nameStr;
+    flocation.line = line;
+    flocation.column = column;
+    flocation.fileName = nameStr;
+    return flocation;
 }
 
 std::vector<CXCursor> stackList;
 
 CXChildVisitResult visitor2(CXCursor cursor, CXCursor parent, CXClientData data) {
-    if (getFileName(cursor) != g_fileName) return CXChildVisit_Continue;
+    fileLocation loc = getFileName(cursor);
+    if ( loc.fileName != g_fileName) return CXChildVisit_Continue;
 
     if (clang_getCString(clang_Cursor_getRawCommentText(cursor)))
         std::cout <<"////////////////"<< clang_getCString(clang_Cursor_getRawCommentText(cursor)) << std::endl;
@@ -61,14 +73,15 @@ CXChildVisitResult visitor2(CXCursor cursor, CXCursor parent, CXClientData data)
     stackList.push_back(cursor);
 
     std::cout << "Cursor '" << clang_getCursorSpelling(cursor) << "' of kind '"
-        << clang_getCursorKindSpelling(clang_getCursorKind(cursor)) << "' parent:" << clang_getCursorSpelling(parent) << "\n";
+        << clang_getCursorKindSpelling(clang_getCursorKind(cursor)) << "' parent:" << clang_getCursorSpelling(parent) << "  line:" << loc.line << "\n";
 
     return CXChildVisit_Recurse;
 }
 
 CXChildVisitResult visitor(CXCursor cursor, CXCursor parent, CXClientData data) {
 
-    if (getFileName(cursor) != g_fileName) return CXChildVisit_Continue;
+    fileLocation loc = getFileName(cursor);
+    if (loc.fileName != g_fileName) return CXChildVisit_Continue;
 
     CXCursorKind kind = clang_getCursorKind(cursor);
 
