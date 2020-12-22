@@ -3,7 +3,7 @@ enum class Cpp11Enum
   RED = 10,
   BLUE = 20
 };
-#define TAG
+#define TAG 123
 struct Wowza
 {
   virtual ~Wowza() = default;

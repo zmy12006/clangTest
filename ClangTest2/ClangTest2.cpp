@@ -10,8 +10,66 @@
 
 #include <clang-c/Index.h>
 #include <iostream>
+#include <vector>
+using namespace std;
+std::string g_fileName = "";
 
-CXChildVisitResult visitor(CXCursor cursor, CXCursor, CXClientData) {
+ostream& operator<<(ostream& stream, const CXString& str)
+{
+    stream << clang_getCString(str);
+    clang_disposeString(str);
+    return stream;
+}
+
+std::string getFileName(CXCursor cursor)
+{
+    //CXCursorKind kind = clang_getCursorKind(cursor);
+    CXSourceRange range = clang_getCursorExtent(cursor);
+    CXSourceLocation location = clang_getRangeStart(range);
+
+    CXFile file;
+    unsigned line;
+    unsigned column;
+    clang_getFileLocation(location, &file, &line, &column, nullptr);
+
+    auto fileName = clang_getFileName(file);
+
+    std::string nameStr = "";
+    if (clang_getCString(fileName)) nameStr = clang_getCString(fileName);
+    return nameStr;
+}
+
+std::vector<CXCursor> stackList;
+
+CXChildVisitResult visitor2(CXCursor cursor, CXCursor parent, CXClientData data) {
+    if (getFileName(cursor) != g_fileName) return CXChildVisit_Continue;
+
+    if (clang_getCString(clang_Cursor_getRawCommentText(cursor)))
+        std::cout <<"////////////////"<< clang_getCString(clang_Cursor_getRawCommentText(cursor)) << std::endl;
+
+    while (stackList.size() > 0)
+    {
+        if (stackList[stackList.size() - 1].data[0] == parent.data[0])
+            break;
+        else
+            stackList.erase(stackList.end()-1);
+    }
+    for (int i = 0; i < stackList.size(); i++)
+    {
+        std::cout << "......";
+    }
+    stackList.push_back(cursor);
+
+    std::cout << "Cursor '" << clang_getCursorSpelling(cursor) << "' of kind '"
+        << clang_getCursorKindSpelling(clang_getCursorKind(cursor)) << "' parent:" << clang_getCursorSpelling(parent) << "\n";
+
+    return CXChildVisit_Recurse;
+}
+
+CXChildVisitResult visitor(CXCursor cursor, CXCursor parent, CXClientData data) {
+
+    if (getFileName(cursor) != g_fileName) return CXChildVisit_Continue;
+
     CXCursorKind kind = clang_getCursorKind(cursor);
 
     // Consider functions and methods
@@ -61,11 +119,15 @@ int main(int argc, char** argv) {
     // Speed up parsing by skipping function bodies
     CXTranslationUnit translationUnit = clang_parseTranslationUnit(
         index, argv[1], ARGUMENTS, std::extent<decltype(ARGUMENTS)>::value,
-        nullptr, 0, CXTranslationUnit_SkipFunctionBodies);
+        nullptr, 0, CXTranslationUnit_SkipFunctionBodies | CXTranslationUnit_DetailedPreprocessingRecord);
+
+    g_fileName = argv[1];
+
+    
 
     // Visit all the nodes in the AST
     CXCursor cursor = clang_getTranslationUnitCursor(translationUnit);
-    clang_visitChildren(cursor, visitor, 0);
+    clang_visitChildren(cursor, visitor2, 0);
 
     // Release memory
     clang_disposeTranslationUnit(translationUnit);

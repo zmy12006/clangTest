@@ -48,13 +48,17 @@ CXChildVisitResult printVisitor(CXCursor cursor, CXCursor parent, CXClientData c
         std::cout << "name is: " << cstr1 << std::endl;
     }
     //clang_getCursorResultType
-    if (type.kind != 0 && kind == CXCursorKind::CXCursor_CXXMethod)
+    else if (type.kind != 0 && kind == CXCursorKind::CXCursor_CXXMethod)
     {
         std::cout << "return type:" << clang_getTypeSpelling(clang_getCursorResultType(cursor)) <<std::endl;
     }
-    if (type.kind != 0 && kind == CXCursorKind::CXCursor_EnumConstantDecl )
+    else if (type.kind != 0 && kind == CXCursorKind::CXCursor_EnumConstantDecl )
     {
         std::cout << "value is: " << clang_getEnumConstantDeclUnsignedValue(cursor)<<std::endl;
+    }
+    else
+    {
+        std::cout << "unknow......\n";
     }
 
     return CXChildVisit_Recurse;
