@@ -1,4 +1,4 @@
-// ClangTest2.cpp : This file contains the 'main' function. Program execution begins and ends there.
+﻿// ClangTest2.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
 //#include <iostream>
@@ -26,6 +26,24 @@ ostream& operator<<(ostream& stream, const CXString& str)
     stream << clang_getCString(str);
     clang_disposeString(str);
     return stream;
+}
+
+std::string getTypeName(CXCursor cursor)
+{
+    CXType type = clang_getCursorType(cursor);
+    {
+        // 判断类型是否是一个模板实例化，普通的类的模板参数是-1
+        int num = clang_Type_getNumTemplateArguments(type);
+
+        // 遍历全部的实例化的模板参数
+        for (auto loop = 0; loop < num; ++loop) {
+            CXType ttype = clang_Type_getTemplateArgumentAsType(type, loop);
+            std::string ttypeName = clang_getCString(clang_getTypeSpelling(ttype));
+            std::cout << "......" << ttypeName << std::endl;
+        }
+    }
+    std::string typeName = clang_getCString(clang_getTypeSpelling(type));
+    return typeName;
 }
 
 fileLocation getFileName(CXCursor cursor)
@@ -73,7 +91,7 @@ CXChildVisitResult visitor2(CXCursor cursor, CXCursor parent, CXClientData data)
     stackList.push_back(cursor);
 
     std::cout << "Cursor '" << clang_getCursorSpelling(cursor) << "' of kind '"
-        << clang_getCursorKindSpelling(clang_getCursorKind(cursor)) << "' parent:" << clang_getCursorSpelling(parent) << "  line:" << loc.line << "\n";
+        << clang_getCursorKindSpelling(clang_getCursorKind(cursor)) << "  type:" << getTypeName(cursor) << "' parent:" << clang_getCursorSpelling(parent) << "  line:" << loc.line << "\n";
 
     return CXChildVisit_Recurse;
 }
